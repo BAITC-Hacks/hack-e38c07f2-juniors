@@ -5,6 +5,7 @@ import path from 'node:path';
 import {randomUUID} from 'node:crypto';
 import {fields,rate,validateTask,localQuestions,validateQuestions,aiPrompt} from './lib/domain.js';
 import {seed} from './lib/seed.js';
+import {languageName,validateMessages,assistantPrompt,localReply,fallbackQuestions} from './lib/assistant.js';
 
 const root=path.dirname(fileURLToPath(import.meta.url));
 const dataDir=process.env.DATA_DIR||path.join(root,'data');mkdirSync(dataDir,{recursive:true});
@@ -22,13 +23,25 @@ const server=http.createServer(async(req,res)=>{
  if(req.method==='GET'&&p==='/api/state')return json(res,200,{...db,tasks:db.tasks.map(t=>({...t,...rate(t)})),fields,aiEnabled:!!process.env.OPENAI_API_KEY});
  if(req.method==='POST'&&p==='/api/analyze'){
   const input=await body(req);if(typeof input.description!=='string'||input.description.trim().length<10||input.description.length>6000)throw new Error('Опишите задачу: от 10 до 6000 символов');
-  let questions=localQuestions(input),mode='local',notice='Локальный режим: вопросы по недостающим полям. AI API не подключён.';
+  let questions=fallbackQuestions(localQuestions(input),input.language),mode='local',notice='Локальный режим: вопросы по недостающим полям. AI API не подключён.';
   if(process.env.OPENAI_API_KEY){try{
-   const response=await fetch('https://api.openai.com/v1/chat/completions',{method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${process.env.OPENAI_API_KEY}`},body:JSON.stringify({model:process.env.OPENAI_MODEL||'gpt-4.1-mini',response_format:{type:'json_object'},messages:[{role:'system',content:aiPrompt},{role:'user',content:JSON.stringify(input)}]}),signal:AbortSignal.timeout(20000)});
+   const response=await fetch('https://api.openai.com/v1/chat/completions',{method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${process.env.OPENAI_API_KEY}`},body:JSON.stringify({model:process.env.OPENAI_MODEL||'gpt-4.1-mini',response_format:{type:'json_object'},messages:[{role:'system',content:aiPrompt+' Reply in '+languageName(input.language)+'.'},{role:'user',content:JSON.stringify(input)}]}),signal:AbortSignal.timeout(20000)});
    if(!response.ok)throw new Error('API error');
    const result=await response.json();questions=validateQuestions(JSON.parse(result.choices[0].message.content));mode='ai';notice='AI проанализировал описание. Проверьте ответы перед подтверждением карточки.';
   }catch{notice='AI временно недоступен или вернул некорректный ответ. Использованы локальные вопросы.'}}
   return json(res,200,{questions,mode,notice});
+ }
+ if(req.method==='POST'&&p==='/api/assistant'){
+  const input=await body(req),messages=validateMessages(input.messages);
+  let reply=localReply(messages.at(-1).content,input.language),mode='local';
+  if(process.env.OPENAI_API_KEY){try{
+   const response=await fetch('https://api.openai.com/v1/chat/completions',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+process.env.OPENAI_API_KEY},body:JSON.stringify({model:process.env.OPENAI_MODEL||'gpt-4.1-mini',max_completion_tokens:700,messages:[{role:'system',content:assistantPrompt(input.language)},...messages]}),signal:AbortSignal.timeout(20000)});
+   if(!response.ok)throw new Error('API error');
+   const result=await response.json(),answer=result.choices?.[0]?.message?.content;
+   if(typeof answer!=='string'||!answer.trim()||answer.length>2000)throw new Error('Invalid reply');
+   reply=answer.trim();mode='ai';
+  }catch{}}
+  return json(res,200,{reply,mode});
  }
  if(req.method==='POST'&&p==='/api/tasks'){
   const input=await body(req),clean=validateTask(input);
@@ -51,7 +64,7 @@ const server=http.createServer(async(req,res)=>{
  }
  if(p.startsWith('/api/'))return json(res,404,{error:'Маршрут не найден'});
  if(req.method!=='GET')return json(res,405,{error:'Метод не поддерживается'});
- const assets={'/':'index.html','/app.js':'app.js','/styles.css':'styles.css'};if(!assets[p])return json(res,404,{error:'Страница не найдена'});
+ const assets={'/':'index.html','/app.js':'app.js','/i18n.js':'i18n.js','/styles.css':'styles.css'};if(!assets[p])return json(res,404,{error:'Страница не найдена'});
  res.writeHead(200,{'Content-Type':p.endsWith('.js')?'text/javascript; charset=utf-8':p.endsWith('.css')?'text/css; charset=utf-8':'text/html; charset=utf-8','X-Content-Type-Options':'nosniff'});res.end(readFileSync(path.join(root,'public',assets[p])));
  }catch(e){json(res,400,{error:e.message||'Ошибка запроса'})}
 });
