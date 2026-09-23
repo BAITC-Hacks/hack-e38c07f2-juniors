@@ -68,4 +68,4 @@ const server=http.createServer(async(req,res)=>{
  res.writeHead(200,{'Content-Type':p.endsWith('.js')?'text/javascript; charset=utf-8':p.endsWith('.css')?'text/css; charset=utf-8':'text/html; charset=utf-8','X-Content-Type-Options':'nosniff'});res.end(readFileSync(path.join(root,'public',assets[p])));
  }catch(e){json(res,400,{error:e.message||'Ошибка запроса'})}
 });
-server.listen(Number(process.env.PORT)||3000,'127.0.0.1',()=>console.log(`AlemQuest: http://localhost:${process.env.PORT||3000}`));
+server.listen(Number(process.env.PORT)||3000,'127.0.0.1',()=>console.log(`SmartFlow: http://localhost:${process.env.PORT||3000}`));

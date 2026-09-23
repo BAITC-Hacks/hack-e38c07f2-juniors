@@ -7,7 +7,7 @@ import path from 'node:path';
 import {once} from 'node:events';
 
 test('Сквозной API-сценарий: AI fallback → публикация → отклик → выбор → этап → перезапуск',async()=>{
- const dir=mkdtempSync(path.join(tmpdir(),'alemquest-test-'));
+ const dir=mkdtempSync(path.join(tmpdir(),'smartflow-test-'));
  const port=31000+Math.floor(Math.random()*10000);
  const start=async()=>{const child=spawn(process.execPath,['server.js'],{env:{...process.env,PORT:String(port),DATA_DIR:dir,OPENAI_API_KEY:''},stdio:['ignore','pipe','pipe']});await Promise.race([once(child.stdout,'data'),once(child,'error').then(([e])=>{throw e}),new Promise((_,reject)=>setTimeout(()=>reject(new Error('Server startup timeout')),8000).unref())]);return child};
  let child=await start();
@@ -39,5 +39,5 @@ test('Сквозной API-сценарий: AI fallback → публикаци�
   const exit=once(child,'exit');child.kill();await exit;child=await start();
   const persisted=(await call('state')).data;assert.equal(persisted.tasks.find(t=>t.id===created.id).score,100);assert.equal(persisted.proposals.find(p=>p.id===id).milestoneConfirmed,true);
   assert.equal((await call('proposals/'+id,{status:'rejected'})).data.milestoneConfirmed,false);
- }finally{const exit=once(child,'exit');child.kill();await exit;assert.equal(path.dirname(path.resolve(dir)),path.resolve(tmpdir()));assert.ok(path.basename(dir).startsWith('alemquest-test-'));rmSync(dir,{recursive:true,force:true})}
+ }finally{const exit=once(child,'exit');child.kill();await exit;assert.equal(path.dirname(path.resolve(dir)),path.resolve(tmpdir()));assert.ok(path.basename(dir).startsWith('smartflow-test-'));rmSync(dir,{recursive:true,force:true})}
 });

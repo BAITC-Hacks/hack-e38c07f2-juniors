@@ -1,9 +1,9 @@
 {
-  "name": "alemquest",
+  "name": "smartflow",
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "description": "Бизнес-задачи, с которых начинается практика",
+  "description": "SmartFlow — платформа практических задач для бизнеса и студенческих команд",
   "scripts": {
     "start": "node --env-file-if-exists=.env server.js",
     "test": "node --test"
