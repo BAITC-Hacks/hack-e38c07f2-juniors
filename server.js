@@ -5,10 +5,13 @@ import path from 'node:path';
 import {randomUUID} from 'node:crypto';
 import {fields,rate,validateTask,localQuestions,validateQuestions,aiPrompt} from './lib/domain.js';
 import {seed} from './lib/seed.js';
+
 const root=path.dirname(fileURLToPath(import.meta.url));
 const dataDir=process.env.DATA_DIR||path.join(root,'data');mkdirSync(dataDir,{recursive:true});
 const dbPath=path.join(dataDir,'db.json');
+
 let db=existsSync(dbPath)?JSON.parse(readFileSync(dbPath,'utf8')):seed();
+
 function save(){writeFileSync(dbPath+'.tmp',JSON.stringify(db,null,2));renameSync(dbPath+'.tmp',dbPath)}save();
 function json(res,status,data){res.writeHead(status,{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store'});res.end(JSON.stringify(data))}
 async function body(req){let s='';for await(const c of req){s+=c;if(s.length>100000)throw new Error('Запрос слишком большой')}try{return JSON.parse(s||'{}')}catch{throw new Error('Некорректный JSON')}}
