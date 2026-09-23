@@ -5,7 +5,6 @@ import {mkdtempSync,rmSync} from 'node:fs';
 import {tmpdir} from 'node:os';
 import path from 'node:path';
 import {once} from 'node:events';
-
 test('Сквозной API-сценарий: AI fallback → публикация → отклик → выбор → этап → перезапуск',async()=>{
  const dir=mkdtempSync(path.join(tmpdir(),'smartflow-test-'));
  const port=31000+Math.floor(Math.random()*10000);
