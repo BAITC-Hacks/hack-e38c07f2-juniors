@@ -5,12 +5,14 @@ import {mkdtempSync,rmSync} from 'node:fs';
 import {tmpdir} from 'node:os';
 import path from 'node:path';
 import {once} from 'node:events';
+
 test('Сквозной API-сценарий: AI fallback → публикация → отклик → выбор → этап → перезапуск',async()=>{
  const dir=mkdtempSync(path.join(tmpdir(),'alemquest-test-'));
  const port=31000+Math.floor(Math.random()*10000);
  const start=async()=>{const child=spawn(process.execPath,['server.js'],{env:{...process.env,PORT:String(port),DATA_DIR:dir,OPENAI_API_KEY:''},stdio:['ignore','pipe','pipe']});await Promise.race([once(child.stdout,'data'),once(child,'error').then(([e])=>{throw e}),new Promise((_,reject)=>setTimeout(()=>reject(new Error('Server startup timeout')),8000).unref())]);return child};
  let child=await start();
  const call=async(p,b)=>{const r=await fetch(`http://127.0.0.1:${port}/api/${p}`,b?{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(b)}:{});return {status:r.status,data:await r.json()}};
+ 
  try{
   const s=(await call('state')).data;
   const analysis=await call('analyze',{description:'Хочу улучшить закупки в нашей кофейне'});assert.equal(analysis.data.mode,'local');assert.ok(analysis.data.questions.length>=3);
