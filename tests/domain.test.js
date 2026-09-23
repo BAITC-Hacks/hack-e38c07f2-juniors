@@ -1,8 +1,12 @@
 import test from 'node:test';
+
 import assert from 'node:assert/strict';
+
 import {fields,rate,readiness,validateQuestions,localQuestions,validateTask} from '../lib/domain.js';
 import {seed} from '../lib/seed.js';
+
 const full=()=>({...Object.fromEntries(fields.map(f=>[f.key,'Подробное подтверждённое описание'])),confirmed:Object.fromEntries(fields.map(f=>[f.key,true]))});
+
 test('Без подтверждения баллы не начисляются; все поля дают ровно 100',()=>{const t=full();assert.equal(rate(t).score,100);t.confirmed={};assert.equal(rate(t).score,0)});
 test('Пустые и слишком короткие значения не дают баллы',()=>{const t=full();t.data='   ';t.success='да';assert.equal(rate(t).score,65)});
 test('Границы уровней готовности',()=>{assert.deepEqual([0,39,40,69,70,89,90,100].map(readiness),['Черновик','Черновик','Рабочая','Рабочая','Готовая','Готовая','Приоритетная','Приоритетная'])});
