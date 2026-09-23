@@ -1,0 +1,14 @@
+{
+  "name": "alemquest",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Бизнес-задачи, с которых начинается практика",
+  "scripts": {
+    "start": "node --env-file-if-exists=.env server.js",
+    "test": "node --test"
+  },
+  "engines": {
+    "node": ">=22.9"
+  }
+}
